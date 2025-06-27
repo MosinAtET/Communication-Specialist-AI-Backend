@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Test result files
+*.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Ignore test output and cache
+*.coverage
+.cache/
+
+# Ignore database files
+*.sqlite3
+*.db
+
+# Ignore editor files
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Ignore pip wheel files
+*.whl
+
+# Ignore backup files
+*~
+
+# Ignore example env files (keep for reference, don't ignore)
+!env.example
