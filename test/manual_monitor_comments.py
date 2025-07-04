@@ -16,9 +16,9 @@ logging.basicConfig(
 from app.scheduler import CommunicationScheduler
 
 # === EDIT THESE VALUES ===
-post_id = "PDE1156BD"  # Your internal post ID
-platform = "linkedin"   # Platform name
-platform_post_id = "urn:li:share:7346790012278964224"  # The actual tweet ID (from Twitter API response)
+post_id = "PC34E32D0"  # Your internal post ID
+platform = "twitter"   # Platform name
+platform_post_id = "1941076318449484035"  # The actual tweet ID (from Twitter API response)
 
 if __name__ == "__main__":
     scheduler = CommunicationScheduler()

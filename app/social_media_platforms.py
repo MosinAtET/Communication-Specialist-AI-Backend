@@ -244,24 +244,42 @@ class TwitterPlatform(SocialMediaPlatform):
     def get_comments(self, post_id: str) -> Dict[str, Any]:
         try:
             if not self.authenticated:
+                self.authenticate()
+            if not self.authenticated:
                 return {"success": False, "error": "Not authenticated"}
-            
-            # Free tier limitation: search_recent_tweets has very restrictive rate limits (1 request per 15 min)
-            # For practical use, we return empty comments to avoid hitting rate limits
-            # In a production environment, you would need:
-            # 1. Elevated access to Twitter API, or
-            # 2. Webhook implementation, or
-            # 3. Manual comment monitoring through your app's UI
-            
-            logger.info(f"Free tier limitation: search_recent_tweets limited to 1 request per 15 min")
-            logger.info(f"Returning empty comments for post {post_id} to avoid rate limits")
-            logger.info(f"Consider upgrading to elevated access for better rate limits")
-            
-            return {"success": True, "comments": []}
-            
-        except Exception as e:
-            logger.error(f"Error getting Twitter replies: {e}")
-            return {"success": False, "error": str(e)}
+
+            # Twitter API v2: Fetch replies using conversation_id
+            query = f"conversation_id:{post_id}"
+            try:
+                response = self.client.search_recent_tweets(
+                    query=query,
+                    tweet_fields=["author_id", "created_at", "conversation_id"],
+                    expansions=["author_id"],
+                    max_results=50  # Twitter API max is 100; use 50 to be safe
+                )
+                tweets = response.data if response and response.data else []
+                users = {u.id: u for u in response.includes["users"]} if response and hasattr(response, "includes") and "users" in response.includes else {}
+                comments = []
+                for tweet in tweets:
+                    user = users.get(tweet.author_id) if users else None
+                    comments.append({
+                        "comment_id": str(tweet.id),
+                        "user_name": user.username if user and hasattr(user, "username") else str(tweet.author_id),
+                        "text": tweet.text,
+                        "timestamp": tweet.created_at.isoformat() if hasattr(tweet, "created_at") and tweet.created_at else ""
+                    })
+                return {"success": True, "comments": comments}
+            except tweepy.TooManyRequests as rate_limit_error:
+                logger.warning(f"⚠️ Twitter rate limited when fetching comments: {rate_limit_error}")
+                return {
+                    "success": False,
+                    "error": "Twitter rate limit exceeded",
+                    "details": "Please wait before trying to fetch comments again",
+                    "retry_after": "15 minutes"
+                }
+        except Exception as api_error:
+            logger.error(f"Error fetching Twitter replies: {api_error}")
+            return {"success": False, "error": str(api_error)}
     
     def respond_to_comment(self, comment_id: str, response: str, *args, **kwargs) -> Dict[str, Any]:
         try:
