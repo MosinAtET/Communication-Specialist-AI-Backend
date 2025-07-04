@@ -242,11 +242,11 @@ async def get_platforms():
     """Get supported social media platforms"""
     return {
         "platforms": [
-            # {
-            #     "name": "LinkedIn",
-            #     "id": "linkedin",
-            #     "features": ["posts", "comments", "scheduling"]
-            # },
+            {
+                "name": "LinkedIn",
+                "id": "linkedin",
+                "features": ["posts", "comments", "scheduling"]
+            },
             {
                 "name": "Twitter/X",
                 "id": "twitter",

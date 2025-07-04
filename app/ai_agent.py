@@ -73,6 +73,8 @@ class AICommunicationAgent:
         
         Do not exceed 500 characters.
         
+        For LinkedIn: Return only ONE concise, plain text post. Do NOT use markdown, bold, headings, numbering, or options. Do NOT return multiple options. Do NOT use asterisks or any formatting. Just return a simple text post.
+        
         Post content:
         """
         

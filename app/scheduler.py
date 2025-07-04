@@ -29,6 +29,13 @@ def publish_scheduled_post(post_id: str, platform: str):
     scheduler = CommunicationScheduler()
     scheduler._publish_scheduled_post(post_id, platform)
 
+# --- TOP-LEVEL FUNCTION FOR COMMENT MONITORING JOB ---
+def monitor_comments_job(post_id, platform, platform_post_id):
+    """Top-level function for APScheduler to call for monitoring comments."""
+    from app.scheduler import CommunicationScheduler
+    scheduler = CommunicationScheduler()
+    scheduler._monitor_comments(post_id, platform, platform_post_id)
+
 class CommunicationScheduler:
     """Main scheduler for managing social media posts and comment monitoring"""
     
@@ -412,17 +419,15 @@ class CommunicationScheduler:
             # Schedule monitoring to start 15 minutes after post time
             # and run every 15 minutes for 24 hours
             job_id = f"monitor_{post_id}_{platform}"
-            
             # Remove existing job if any
             try:
                 self.scheduler.remove_job(job_id)
             except Exception as e:
                 logger.info(f"[DEBUG] No existing job to remove for {job_id}: {e}")
-            
-            # Schedule the monitoring job
-            # Run every 15 minutes for better responsiveness
+            # Schedule the monitoring job as a top-level function
+            from app.scheduler import monitor_comments_job
             self.scheduler.add_job(
-                func=self._monitor_comments,
+                func=monitor_comments_job,
                 trigger=CronTrigger(minute="*/15"),  # Every 15 minutes
                 args=[post_id, platform, platform_post_id],
                 id=job_id,

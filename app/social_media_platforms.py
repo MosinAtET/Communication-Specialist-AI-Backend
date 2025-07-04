@@ -39,144 +39,146 @@ class SocialMediaPlatform(ABC):
         """Get the status of a post"""
         pass
 
-# class LinkedInPlatform(SocialMediaPlatform):
-#     """LinkedIn platform integration"""
-#     
-#     def __init__(self):
-#         super().__init__()
-#         self.client_id = settings.LINKEDIN_CLIENT_ID
-#         self.client_secret = settings.LINKEDIN_CLIENT_SECRET
-#         self.access_token = settings.LINKEDIN_ACCESS_TOKEN
-#         self.person_urn = settings.LINKEDIN_PERSON_URN
-#         self.authenticate()
-#     
-#     def authenticate(self) -> bool:
-#         try:
-#             if not self.access_token or not self.person_urn:
-#                 logger.error("LinkedIn access token or person URN not configured")
-#                 return False
-#             self.authenticated = True
-#             logger.info("LinkedIn authentication successful")
-#             return True
-#         except Exception as e:
-#             logger.error(f"LinkedIn authentication failed: {e}")
-#             return False
-#     
-#     def schedule_post(self, content: str, scheduled_time: datetime) -> Dict[str, Any]:
-#         try:
-#             if not self.authenticated:
-#                 return {"success": False, "error": "Not authenticated"}
-#             
-#             # Validate person_urn format
-#             if not self.person_urn or not self.person_urn.startswith("urn:li:person:"):
-#                 return {"success": False, "error": "Invalid LinkedIn person URN format"}
-#             
-#             url = "https://api.linkedin.com/v2/ugcPosts"
-#             headers = {
-#                 "Authorization": f"Bearer {self.access_token}",
-#                 "X-Restli-Protocol-Version": "2.0.0",
-#                 "Content-Type": "application/json"
-#             }
-#             data = {
-#                 "author": self.person_urn,
-#                 "lifecycleState": "PUBLISHED",
-#                 "specificContent": {
-#                     "com.linkedin.ugc.ShareContent": {
-#                         "shareCommentary": {"text": content},
-#                         "shareMediaCategory": "NONE"
-#                     }
-#                 },
-#                 "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
-#             }
-#             
-#             logger.info(f"LinkedIn API request data: {data}")
-#             response = requests.post(url, headers=headers, json=data)
-#             
-#             if response.status_code == 201:
-#                 post_id = response.json().get("id", "")
-#                 logger.info(f"LinkedIn post scheduled: {post_id}")
-#                 return {"success": True, "post_id": post_id}
-#             else:
-#                 logger.error(f"LinkedIn post error: {response.status_code} - {response.text}")
-#                 return {"success": False, "error": response.text}
-#         except Exception as e:
-#             logger.error(f"Error scheduling LinkedIn post: {e}")
-#             return {"success": False, "error": str(e)}
-#     
-#     def get_comments(self, post_id: str) -> Dict[str, Any]:
-#         try:
-#             if not self.authenticated:
-#                 return {"success": False, "error": "Not authenticated"}
-#             # LinkedIn API: Get comments for a post
-#             url = f"https://api.linkedin.com/v2/socialActions/{post_id}/comments"
-#             headers = {
-#                 "Authorization": f"Bearer {self.access_token}",
-#                 "X-Restli-Protocol-Version": "2.0.0"
-#             }
-#             response = requests.get(url, headers=headers)
-#             if response.status_code == 200:
-#                 comments_data = response.json().get("elements", [])
-#                 comments = []
-#                 for c in comments_data:
-#                     comments.append({
-#                         "comment_id": c.get("id", ""),
-#                         "user_name": c.get("actor", ""),
-#                         "text": c.get("message", {}).get("text", ""),
-#                         "timestamp": c.get("created", datetime.now().isoformat())
-#                     })
-#                 return {"success": True, "comments": comments}
-#             else:
-#                 logger.error(f"LinkedIn get comments error: {response.text}")
-#                 return {"success": False, "error": response.text}
-#         except Exception as e:
-#             logger.error(f"Error getting LinkedIn comments: {e}")
-#             return {"success": False, "error": str(e)}
-#     
-#     def respond_to_comment(self, comment_id: str, response: str) -> Dict[str, Any]:
-#         try:
-#             if not self.authenticated:
-#                 return {"success": False, "error": "Not authenticated"}
-#             url = f"https://api.linkedin.com/v2/socialActions/{comment_id}/comments"
-#             headers = {
-#                 "Authorization": f"Bearer {self.access_token}",
-#                 "X-Restli-Protocol-Version": "2.0.0",
-#                 "Content-Type": "application/json"
-#             }
-#             data = {"actor": self.person_urn, "message": {"text": response}}
-#             resp = requests.post(url, headers=headers, json=data)
-#             if resp.status_code == 201:
-#                 comment_id = resp.json().get("id", "")
-#                 logger.info(f"LinkedIn comment reply sent: {comment_id}")
-#                 return {"success": True, "response_id": comment_id}
-#             else:
-#                 logger.error(f"LinkedIn reply error: {resp.text}")
-#                 return {"success": False, "error": resp.text}
-#         except Exception as e:
-#             logger.error(f"Error replying to LinkedIn comment: {e}")
-#             return {"success": False, "error": str(e)}
-#     
-#     def get_post_status(self, post_id: str) -> Dict[str, Any]:
-#         """Get LinkedIn post status"""
-#         try:
-#             if not self.authenticated:
-#                 return {"success": False, "error": "Not authenticated"}
-#             
-#             # Simulate getting post status
-#             status_data = {
-#                 "post_id": post_id,
-#                 "status": "published",
-#                 "engagement": {
-#                     "likes": 25,
-#                     "comments": 8,
-#                     "shares": 3
-#                 }
-#             }
-#             
-#             return {"success": True, "status": status_data}
-#             
-#         except Exception as e:
-#             logger.error(f"Error getting LinkedIn post status: {e}")
-#             return {"success": False, "error": str(e)}
+class LinkedInPlatform(SocialMediaPlatform):
+    """LinkedIn platform integration"""
+    
+    def __init__(self):
+        super().__init__()
+        self.client_id = settings.LINKEDIN_CLIENT_ID
+        self.client_secret = settings.LINKEDIN_CLIENT_SECRET
+        self.access_token = settings.LINKEDIN_ACCESS_TOKEN
+        self.person_urn = settings.LINKEDIN_PERSON_URN
+        self.authenticate()
+    
+    def authenticate(self) -> bool:
+        try:
+            if not self.access_token or not self.person_urn:
+                logger.error("LinkedIn access token or person URN not configured")
+                return False
+            self.authenticated = True
+            logger.info("LinkedIn authentication successful")
+            return True
+        except Exception as e:
+            logger.error(f"LinkedIn authentication failed: {e}")
+            return False
+    
+    def schedule_post(self, content: str, scheduled_time: datetime) -> Dict[str, Any]:
+        try:
+            if not self.authenticated:
+                return {"success": False, "error": "Not authenticated"}
+            
+            # Validate person_urn or organization_urn format
+            if not self.person_urn:
+                return {"success": False, "error": "LinkedIn URN is not set. Please set LINKEDIN_PERSON_URN in your environment."}
+            if not (self.person_urn.startswith("urn:li:person:") or self.person_urn.startswith("urn:li:organization:")):
+                return {"success": False, "error": f"Invalid LinkedIn URN format: {self.person_urn}. It must start with 'urn:li:person:' or 'urn:li:organization:'"}
+            
+            url = "https://api.linkedin.com/v2/ugcPosts"
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "X-Restli-Protocol-Version": "2.0.0",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "author": self.person_urn,
+                "lifecycleState": "PUBLISHED",
+                "specificContent": {
+                    "com.linkedin.ugc.ShareContent": {
+                        "shareCommentary": {"text": content},
+                        "shareMediaCategory": "NONE"
+                    }
+                },
+                "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+            }
+            
+            logger.info(f"LinkedIn API request data: {data}")
+            response = requests.post(url, headers=headers, json=data)
+            
+            if response.status_code == 201:
+                post_id = response.json().get("id", "")
+                logger.info(f"LinkedIn post scheduled: {post_id}")
+                return {"success": True, "post_id": post_id}
+            else:
+                logger.error(f"LinkedIn post error: {response.status_code} - {response.text}")
+                return {"success": False, "error": response.text}
+        except Exception as e:
+            logger.error(f"Error scheduling LinkedIn post: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def get_comments(self, post_id: str) -> Dict[str, Any]:
+        try:
+            if not self.authenticated:
+                return {"success": False, "error": "Not authenticated"}
+            # LinkedIn API: Get comments for a post
+            url = f"https://api.linkedin.com/v2/socialActions/{post_id}/comments"
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "X-Restli-Protocol-Version": "2.0.0"
+            }
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                comments_data = response.json().get("elements", [])
+                comments = []
+                for c in comments_data:
+                    comments.append({
+                        "comment_id": c.get("id", ""),
+                        "user_name": c.get("actor", ""),
+                        "text": c.get("message", {}).get("text", ""),
+                        "timestamp": c.get("created", datetime.now().isoformat())
+                    })
+                return {"success": True, "comments": comments}
+            else:
+                logger.error(f"LinkedIn get comments error: {response.text}")
+                return {"success": False, "error": response.text}
+        except Exception as e:
+            logger.error(f"Error getting LinkedIn comments: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def respond_to_comment(self, comment_id: str, response: str) -> Dict[str, Any]:
+        try:
+            if not self.authenticated:
+                return {"success": False, "error": "Not authenticated"}
+            url = f"https://api.linkedin.com/v2/socialActions/{comment_id}/comments"
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "X-Restli-Protocol-Version": "2.0.0",
+                "Content-Type": "application/json"
+            }
+            data = {"actor": self.person_urn, "message": {"text": response}}
+            resp = requests.post(url, headers=headers, json=data)
+            if resp.status_code == 201:
+                comment_id = resp.json().get("id", "")
+                logger.info(f"LinkedIn comment reply sent: {comment_id}")
+                return {"success": True, "response_id": comment_id}
+            else:
+                logger.error(f"LinkedIn reply error: {resp.text}")
+                return {"success": False, "error": resp.text}
+        except Exception as e:
+            logger.error(f"Error replying to LinkedIn comment: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def get_post_status(self, post_id: str) -> Dict[str, Any]:
+        """Get LinkedIn post status"""
+        try:
+            if not self.authenticated:
+                return {"success": False, "error": "Not authenticated"}
+            
+            # Simulate getting post status
+            status_data = {
+                "post_id": post_id,
+                "status": "published",
+                "engagement": {
+                    "likes": 25,
+                    "comments": 8,
+                    "shares": 3
+                }
+            }
+            
+            return {"success": True, "status": status_data}
+            
+        except Exception as e:
+            logger.error(f"Error getting LinkedIn post status: {e}")
+            return {"success": False, "error": str(e)}
 
 class TwitterPlatform(SocialMediaPlatform):
     """Twitter/X platform integration using Tweepy v2 Client"""
@@ -532,7 +534,7 @@ class SocialMediaManager:
     
     def __init__(self):
         self.platforms = {
-            # "linkedin": LinkedInPlatform(),
+            "linkedin": LinkedInPlatform(),
             "twitter": TwitterPlatform(),
             "devto": DevToPlatform()
         }
@@ -548,3 +550,31 @@ class SocialMediaManager:
     def get_authenticated_platforms(self) -> List[str]:
         """Get list of authenticated platforms"""
         return [name for name, platform in self.platforms.items() if platform.authenticated] 
+
+def fetch_linkedin_person_urn():
+    """Fetch and print the LinkedIn person URN using the configured access token."""
+    import requests
+    from app.config import settings
+    access_token = settings.LINKEDIN_ACCESS_TOKEN
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "X-Restli-Protocol-Version": "2.0.0"
+    }
+    url = "https://api.linkedin.com/v2/me"
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            person_id = data.get("id")
+            if person_id:
+                print(f"Your LinkedIn person URN is: urn:li:person:{person_id}")
+                return f"urn:li:person:{person_id}"
+            else:
+                print("Could not find 'id' in LinkedIn API response.")
+        else:
+            print(f"LinkedIn API error: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"Error fetching LinkedIn person URN: {e}")
+
+if __name__ == "__main__":
+    fetch_linkedin_person_urn() 
