@@ -420,13 +420,14 @@ class AICommunicationAgent:
                     formatted_time = event_time.strftime("%I:%M %p") if event_time else "No time"
                 
                 events_info.append(f"""
-Event {i+1}:
-- Title: {event.get('Title', 'N/A')}
-- Date: {formatted_date}
-- Time: {formatted_time}
-- Description: {event.get('Description', 'N/A')}
-- ID: {event.get('EventID', 'N/A')}
-""")
+                            Event {i+1}:
+                            - Title: {event.get('Title', 'N/A')}
+                            - Date: {formatted_date}
+                            - Time: {formatted_time}
+                            - Description: {event.get('Description', 'N/A')}
+                            - ID: {event.get('EventID', 'N/A')}
+                            - Registration Link: {event.get('RegistrationLink', 'N/A')}
+                        """)
             
             prompt = f"""
             Based on the user's query, determine which event they are referring to.

@@ -74,6 +74,22 @@ class EventInfo(BaseModel):
     registration_link: Optional[str]
     is_recorded: str
 
+class CreateEventRequest(BaseModel):
+    title: str
+    date: str  # YYYY-MM-DD format
+    time: str  # HH:MM:SS format
+    description: Optional[str] = None
+    registration_link: Optional[str] = None
+    is_recorded: Optional[str] = "No"
+
+class UpdateEventRequest(BaseModel):
+    title: Optional[str] = None
+    date: Optional[str] = None  # YYYY-MM-DD format
+    time: Optional[str] = None  # HH:MM:SS format
+    description: Optional[str] = None
+    registration_link: Optional[str] = None
+    is_recorded: Optional[str] = None
+
 class AIResponseInfo(BaseModel):
     response_id: str
     trigger_type: str
@@ -187,6 +203,151 @@ async def get_events(days_ahead: int = 30, db: Session = Depends(get_db)):
         return result
     except Exception as e:
         logger.error(f"Error getting events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/events/{event_id}", response_model=EventInfo)
+async def get_event(event_id: str, db: Session = Depends(get_db)):
+    """Get a specific event by ID"""
+    try:
+        event = db.query(EventDetails).filter(EventDetails.EventID == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Format date and time in IST
+        dt = datetime.combine(event.Date, event.Time)
+        dt_ist = IST.localize(dt)
+        return EventInfo(
+            event_id=event.EventID,
+            title=event.Title,
+            date=dt_ist.strftime("%Y-%m-%d %H:%M:%S %Z%z"),
+            time=dt_ist.strftime("%H:%M:%S %Z%z"),
+            description=event.Description or "",
+            registration_link=event.RegistrationLink,
+            is_recorded=event.IsRecorded or "No"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting event {event_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/events", response_model=EventInfo)
+async def create_event(request: CreateEventRequest, db: Session = Depends(get_db)):
+    """Create a new event"""
+    try:
+        # Generate a unique EventID
+        import uuid
+        event_id = f"EVT{uuid.uuid4().hex[:7].upper()}"
+        
+        # Parse date and time
+        event_date = datetime.strptime(request.date, "%Y-%m-%d").date()
+        event_time = datetime.strptime(request.time, "%H:%M:%S").time()
+        
+        # Create new event
+        new_event = EventDetails(
+            EventID=event_id,
+            Title=request.title,
+            Date=event_date,
+            Time=event_time,
+            Description=request.description,
+            RegistrationLink=request.registration_link,
+            IsRecorded=request.is_recorded
+        )
+        
+        db.add(new_event)
+        db.commit()
+        db.refresh(new_event)
+        
+        # Format response
+        dt = datetime.combine(new_event.Date, new_event.Time)
+        dt_ist = IST.localize(dt)
+        return EventInfo(
+            event_id=new_event.EventID,
+            title=new_event.Title,
+            date=dt_ist.strftime("%Y-%m-%d %H:%M:%S %Z%z"),
+            time=dt_ist.strftime("%H:%M:%S %Z%z"),
+            description=new_event.Description or "",
+            registration_link=new_event.RegistrationLink,
+            is_recorded=new_event.IsRecorded or "No"
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date/time format: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error creating event: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/events/{event_id}", response_model=EventInfo)
+async def update_event(event_id: str, request: UpdateEventRequest, db: Session = Depends(get_db)):
+    """Update an existing event"""
+    try:
+        event = db.query(EventDetails).filter(EventDetails.EventID == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Update fields if provided
+        if request.title is not None:
+            event.Title = request.title
+        if request.date is not None:
+            event.Date = datetime.strptime(request.date, "%Y-%m-%d").date()
+        if request.time is not None:
+            event.Time = datetime.strptime(request.time, "%H:%M:%S").time()
+        if request.description is not None:
+            event.Description = request.description
+        if request.registration_link is not None:
+            event.RegistrationLink = request.registration_link
+        if request.is_recorded is not None:
+            event.IsRecorded = request.is_recorded
+        
+        db.commit()
+        db.refresh(event)
+        
+        # Format response
+        dt = datetime.combine(event.Date, event.Time)
+        dt_ist = IST.localize(dt)
+        return EventInfo(
+            event_id=event.EventID,
+            title=event.Title,
+            date=dt_ist.strftime("%Y-%m-%d %H:%M:%S %Z%z"),
+            time=dt_ist.strftime("%H:%M:%S %Z%z"),
+            description=event.Description or "",
+            registration_link=event.RegistrationLink,
+            is_recorded=event.IsRecorded or "No"
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date/time format: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating event {event_id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/events/{event_id}")
+async def delete_event(event_id: str, db: Session = Depends(get_db)):
+    """Delete an event"""
+    try:
+        event = db.query(EventDetails).filter(EventDetails.EventID == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Check if event has associated posts
+        associated_posts = db.query(SocialMediaPosts).filter(SocialMediaPosts.EventID == event_id).count()
+        if associated_posts > 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot delete event. It has {associated_posts} associated social media posts."
+            )
+        
+        db.delete(event)
+        db.commit()
+        
+        return {"message": "Event deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting event {event_id}: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/ai-responses", response_model=List[AIResponseInfo])
